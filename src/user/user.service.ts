@@ -1,18 +1,21 @@
 import { HttpException, Inject, Injectable } from '@nestjs/common';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
-import { PrismaService } from '../common/prisma.service';
 import { ValidationService } from '../common/validation.service';
-import { RegisterUserRequest, UserResponse } from '../model/user.model';
+import {
+  LoginUserRequest,
+  RegisterUserRequest,
+  UserResponse,
+} from '../model/user.model';
 import { Logger } from 'winston';
 import { UserValidation } from './user.validation';
 import * as bcrypt from 'bcrypt';
-import type { Prisma } from '../../generated/prisma/client';
+import { UserRepository } from './user.repository';
 
 @Injectable()
 export class UserService {
   constructor(
     private validationService: ValidationService,
-    private prismaService: PrismaService,
+    private userRepository: UserRepository,
     @Inject(WINSTON_MODULE_PROVIDER) private logger: Logger,
   ) {}
 
@@ -22,11 +25,9 @@ export class UserService {
     const registerRequest: RegisterUserRequest =
       this.validationService.validate(UserValidation.REGISTER, request);
 
-    const countSameUser = await this.prismaService.user.count({
-      where: {
-        username: registerRequest.username,
-      },
-    });
+    const countSameUser = await this.userRepository.countUserBySameUsername(
+      registerRequest.username,
+    );
 
     if (countSameUser !== 0) {
       throw new HttpException('Username already exists', 400);
@@ -34,13 +35,44 @@ export class UserService {
 
     registerRequest.password = await bcrypt.hash(registerRequest.password, 10);
 
-    const user: Prisma.UserCreateInput = await this.prismaService.user.create({
-      data: registerRequest,
-    });
+    const user = await this.userRepository.createUser(registerRequest);
 
     return {
       username: user.username,
       name: user.name,
+    };
+  }
+
+  async login(request: LoginUserRequest): Promise<UserResponse> {
+    this.logger.info(`Login user ${JSON.stringify(request)}`);
+
+    const loginRequest: LoginUserRequest = this.validationService.validate(
+      UserValidation.LOGIN,
+      request,
+    );
+
+    const user = await this.userRepository.findUserByUsername(
+      loginRequest.username,
+    );
+
+    if (!user) {
+      throw new HttpException('Username or password is wrong', 401);
+    }
+
+    const hashedPassword = user.password as string;
+    const isPasswordValid = await bcrypt.compare(
+      loginRequest.password,
+      hashedPassword,
+    );
+
+    if (!isPasswordValid) {
+      throw new HttpException('Username or password is wrong', 401);
+    }
+
+    return {
+      username: loginRequest.username,
+      name: loginRequest.username,
+      token: 'token',
     };
   }
 }

@@ -2,8 +2,8 @@ import { Global, Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { WinstonModule } from 'nest-winston';
 import * as winston from 'winston';
-import { APP_FILTER } from '@nestjs/core';
-import { ValidationService } from './validation.service';
+import { APP_FILTER, APP_PIPE } from '@nestjs/core';
+import { ValidationPipe } from '@nestjs/common';
 import { PrismaService } from './prisma.service';
 import { ErrorFilter } from './error.filter';
 
@@ -21,12 +21,18 @@ import { ErrorFilter } from './error.filter';
   controllers: [],
   providers: [
     PrismaService,
-    ValidationService,
     {
       provide: APP_FILTER,
       useClass: ErrorFilter,
     },
+    {
+      provide: APP_PIPE,
+      useValue: new ValidationPipe({
+        whitelist: true,
+        transform: true,
+      }),
+    },
   ],
-  exports: [WinstonModule, ConfigModule, PrismaService, ValidationService],
+  exports: [WinstonModule, ConfigModule, PrismaService],
 })
 export class CommonModule {}

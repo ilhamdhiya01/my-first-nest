@@ -1,20 +1,18 @@
 import { Body, Controller, HttpCode, Post } from '@nestjs/common';
 import { UserService } from './user.service';
-import {
-  LoginUserRequest,
-  RegisterUserRequest,
-  UserResponse,
-} from '../model/user.model';
+import { RegisterUserDto } from './dto/register-user.dto';
+import { LoginUserDto } from './dto/login-user.dto';
+import { UserResponse } from '../model/user.model';
 import { WebResponse } from '../model/web.model';
 
 @Controller('api/users')
 export class UserController {
   constructor(private userService: UserService) {}
 
-  @Post('/register')
+  @Post()
   @HttpCode(200)
   async register(
-    @Body() request: RegisterUserRequest,
+    @Body() request: RegisterUserDto,
   ): Promise<WebResponse<UserResponse>> {
     const result = await this.userService.register(request);
     return {
@@ -25,7 +23,7 @@ export class UserController {
   @Post('/login')
   @HttpCode(200)
   async login(
-    @Body() request: LoginUserRequest,
+    @Body() request: LoginUserDto,
   ): Promise<WebResponse<UserResponse>> {
     const result = await this.userService.login(request);
     return {

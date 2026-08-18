@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/require-await */
 import { HttpException, Inject, Injectable } from '@nestjs/common';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { UserResponse } from '../model/user.model';
@@ -7,6 +8,7 @@ import { UserRepository } from './user.repository';
 import { RegisterUserDto } from './dto/register-user.dto';
 import { LoginUserDto } from './dto/login-user.dto';
 import { randomUUID } from 'crypto';
+import { User } from 'generated/prisma/client';
 
 @Injectable()
 export class UserService {
@@ -45,7 +47,7 @@ export class UserService {
       throw new HttpException('Username or password is wrong', 401);
     }
 
-    const hashedPassword = user.password as string;
+    const hashedPassword = user.password;
     const isPasswordValid = await bcrypt.compare(
       request.password,
       hashedPassword,
@@ -62,6 +64,13 @@ export class UserService {
       username: user.username,
       name: user.name,
       token: user.token!,
+    };
+  }
+
+  async get(user: User): Promise<UserResponse> {
+    return {
+      username: user.username,
+      name: user.name,
     };
   }
 }

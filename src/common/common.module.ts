@@ -1,4 +1,4 @@
-import { Global, Module } from '@nestjs/common';
+import { Global, MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { WinstonModule } from 'nest-winston';
 import * as winston from 'winston';
@@ -6,6 +6,7 @@ import { APP_FILTER, APP_PIPE } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { PrismaService } from './prisma.service';
 import { ErrorFilter } from './error.filter';
+import { AuthMiddleware } from './auth.middleware';
 
 @Global()
 @Module({
@@ -35,4 +36,8 @@ import { ErrorFilter } from './error.filter';
   ],
   exports: [WinstonModule, ConfigModule, PrismaService],
 })
-export class CommonModule {}
+export class CommonModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(AuthMiddleware).forRoutes('/api/*');
+  }
+}

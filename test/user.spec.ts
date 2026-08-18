@@ -73,6 +73,11 @@ describe('User Controller', () => {
   });
 
   describe('POST /api/users/login', () => {
+    beforeEach(async () => {
+      await testService.deleteUser();
+      await testService.createUser();
+    });
+
     it('should be rejected if request login is invalid', async () => {
       const response = await request(app.getHttpServer())
         .post('/api/users/login')
@@ -86,7 +91,6 @@ describe('User Controller', () => {
     });
 
     it('should be able to login', async () => {
-      await testService.createUser();
       const response = await request(app.getHttpServer())
         .post('/api/users/login')
         .send({
@@ -122,6 +126,32 @@ describe('User Controller', () => {
 
       expect(response.status).toBe(401);
       expect(response.body.errors).toBeDefined();
+    });
+  });
+
+  describe('GET /api/users/current', () => {
+    beforeEach(async () => {
+      await testService.deleteUser();
+      await testService.createUser();
+    });
+
+    it('should be rejected if token is invalid', async () => {
+      const response = await request(app.getHttpServer())
+        .get('/api/users/current')
+        .set('Authorization', 'wrong-token');
+
+      expect(response.status).toBe(401);
+      expect(response.body.errors).toBeDefined();
+    });
+
+    it('should be able to get current user', async () => {
+      const response = await request(app.getHttpServer())
+        .get('/api/users/current')
+        .set('Authorization', 'test');
+
+      expect(response.status).toBe(200);
+      expect(response.body.data.username).toBe('johndoe');
+      expect(response.body.data.name).toBe('John Doe');
     });
   });
 });

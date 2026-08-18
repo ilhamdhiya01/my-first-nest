@@ -29,6 +29,14 @@ export class UserRepository {
     });
   }
 
+  async findUserByToken(token: string) {
+    return await this.prismaService.user.findFirst({
+      where: {
+        token,
+      },
+    });
+  }
+
   async updateUser(username: string, token: string) {
     return await this.prismaService.user.update({
       where: {
